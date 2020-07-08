@@ -1,0 +1,9 @@
+.idea/
+__pycache__/
+PluralSight/
+debug.txt
+course.txt
+downloaded/
+debug.log
+credentials.json
+token.pickle
