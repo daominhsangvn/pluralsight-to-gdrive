@@ -7,3 +7,5 @@ downloaded/
 debug.log
 credentials.json
 token.pickle
+.vscode/
+.history/

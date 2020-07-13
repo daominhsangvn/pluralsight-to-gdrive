@@ -3,9 +3,10 @@ from pluralsight import PluralSight
 import pickle
 import os.path
 from os import chdir, listdir, stat
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
+from googleapiclient.discovery import build                 # pylint: disable=import-error
+from google_auth_oauthlib.flow import InstalledAppFlow      # pylint: disable=import-error
+from google.auth.transport.requests import Request          # pylint: disable=import-error
+import multiprocessing as mp
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
@@ -33,7 +34,6 @@ def authenticate():
     return service
 
 def main():
-
     parser = argparse.ArgumentParser(
         description='A cross-platform python based utility to download courses from PluralSight for personal offline use.', conflict_handler="resolve")
     parser.add_argument(
@@ -65,7 +65,7 @@ def main():
     other.add_argument(
         '-d', '--driver',
         dest='driver',
-        default="/content/driver/chromedriver",
+        default="driver/chromedriver.exe",
         type=str,
         help="Chrome driver execution file", metavar='')
     other.add_argument(
@@ -75,13 +75,29 @@ def main():
         type=bool,
         help="Headless mode", metavar='')
 
+    gdrive = parser.add_argument_group("GDrive")
+    gdrive.add_argument(
+        '-fi', '--folder-id',
+        dest='team_drive_folder_id',
+        type=str,
+        help="Folder Id in Team Drive where the files will be uploaded to", metavar='')
+    gdrive.add_argument(
+        '-di', '--drive-id',
+        dest='team_drive_id',
+        type=str,
+        help="Team Drive Id", metavar='')
+
     options = parser.parse_args()
 
     drive = authenticate()
 
-    #result = drive.teamdrives().list(pageSize=10).execute()
-    #target_drive_folder = list(filter(lambda r: r['name'] == 'Fr33C0ur3s', result['teamDrives']))[0]
-    #print(target_drive_folder)
+    #result = drive.teamdrives().list(q="name='Fr33C0ur3s' and mimeType='application/vnd.google-apps.folder'", pageSize=10).execute()
+    #result = drive.files().list(q="name='Angular Fundamentals' and '1IE8hnv6GO4cRtIoo3UVYlYlsn-Gaw0uz' in parents",
+    #                            pageSize=1, corpora="teamDrive",
+    #                            includeItemsFromAllDrives=True, supportsAllDrives=True,
+    #                            driveId="0AO9IUAFfuvC0Uk9PVA").execute()
+
+    #print(result)
     #result = drive.teamdrives().get(teamDriveId=target_drive_folder['id']).execute()
 
     #print(result)
@@ -98,18 +114,23 @@ def main():
         downloaded_history_file.write("")
         downloaded_history_file.close()
     
-    course_url = options.course
+    #course_url = options.course
     if os.path.isfile(options.course):
         f_in = open(options.course)
         course_urls = [line for line in (l.strip() for l in f_in) if line]
         f_in.close()
 
+    pool = mp.Pool(mp.cpu_count())
+
     print("[+] Found " + str(len(course_urls)) + " COURSES\n")
-    dl = PluralSight(options, downloaded_history_file_path, drive)
+    dl = PluralSight(options, downloaded_history_file_path, drive, pool)
     
     for co in course_urls:
         dl.download_course_by_url(co, options.target_folder)
 
+    # Close the pool and terminate workers
+    pool.close()
+    
     print("")
     print("[+] DONE !")
     print("")
