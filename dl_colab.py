@@ -33,7 +33,7 @@ def main():
         '-e', '--executable-path',
         dest='executablePath',
         default=None,
-        type=int,
+        type=str,
         help="Executable Path", metavar='')
 
     options = parser.parse_args()
