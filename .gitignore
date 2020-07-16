@@ -11,3 +11,6 @@ token.pickle
 .history/
 cookies.txt
 course_all.txt
+temp/
+venv/
+geckodriver.log

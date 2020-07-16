@@ -8,7 +8,9 @@ def main():
     parser = argparse.ArgumentParser(
         description='A cross-platform python based utility to download courses from PluralSight for personal offline use.', conflict_handler="resolve")
     parser.add_argument(
-        'cookies', help="Cookies file path.", type=str)
+        'username', help="Pluralsight username", type=str)
+    parser.add_argument(
+        'password', help="Pluralsight password", type=str)
     parser.add_argument(
         'course', help="Course file path", type=str)
     parser.add_argument(
@@ -46,11 +48,14 @@ def main():
         course_urls = [line for line in (l.strip() for l in f_in) if line]
         f_in.close()
 
-    print("[+] Found " + str(len(course_urls)) + " COURSES\n")
+    print("[+] Found " + str(len(course_urls)) + " COURSES")
     dl = PluralSightColab(options, downloaded_history_file_path)
-    
-    for co in course_urls:
-        dl.download_course_by_url(co, options.target_folder)
+
+    login_success = dl.login()
+
+    if login_success:
+        for co in course_urls:
+            dl.download_course_by_url(co, options.target_folder)
 
     print("")
     print("[+] DONE !")

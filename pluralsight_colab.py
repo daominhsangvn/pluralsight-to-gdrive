@@ -1,31 +1,34 @@
 import requests, json, sys, re, os, re, shutil, subprocess, types, time, traceback, random
-from http.cookiejar import MozillaCookieJar
-from slugify import slugify
+from pyppeteer import launch
+from pyppeteer_stealth import stealth
+import asyncio
 
 from colorama import Fore, Back, Style
 
+
 class PluralSightColab(object):
     def __init__(
-        self,
-        options,
-        downloaded_history_file_path,
-        download_path=os.environ.get('FILE_PATH', './PluralSight'),
+            self,
+            options,
+            downloaded_history_file_path,
+            download_path=os.environ.get('FILE_PATH', './PluralSight'),
     ):
-        cj = MozillaCookieJar(options.cookies)
-        cj.load(ignore_expires=True, ignore_discard=True)
         self._session = requests.Session()
-        self._session.cookies = cj
         self._session.headers.update(
-            {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36'})
+            {
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36'})
         self.downloaded_history_file_path = downloaded_history_file_path
         self.download_path = download_path
         self.min_wait = options.min_wait
         self.max_wait = options.max_wait
+        self.username = options.username
+        self.password = options.password
         self.retry_delay = 30
         self.pythonversion = 3 if sys.version_info >= (3, 0) else 2
 
     def is_unicode_string(self, string):
-        if (self.pythonversion == 3 and isinstance(string, str)) or (self.pythonversion == 2 and isinstance(string, unicode)):
+        if (self.pythonversion == 3 and isinstance(string, str)) or (
+                self.pythonversion == 2 and isinstance(string, unicode)):
             return True
         else:
             return False
@@ -41,6 +44,46 @@ class PluralSightColab(object):
         downloaded_history_file.write(slug + '\n')
         downloaded_history_file.close()
 
+    def login(self):
+        try:
+            self.print_warning_text('[*] Logging in...')
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            args = [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-infobars',
+                '--window-position=0,0',
+                '--ignore-certifcate-errors',
+                '--ignore-certifcate-errors-spki-list',
+                '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"'
+            ]
+            browser = loop.run_until_complete(
+                launch(headless=True, args=args, ignoreHTTPSErrors=True, userDataDir='./temp'))
+            page = loop.run_until_complete(browser.newPage())
+            loop.run_until_complete(stealth(page))
+            loop.run_until_complete(page.setJavaScriptEnabled(True))
+            loop.run_until_complete(page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36'))
+            loop.run_until_complete(page.setViewport({'width': 1600, 'height': 900}))
+            loop.run_until_complete(page.goto('https://app.pluralsight.com/id?'))
+            loop.run_until_complete(page.waitFor('#Username'))
+            loop.run_until_complete(page.type('#Username', self.username))
+            loop.run_until_complete(page.type('#Password', self.password))
+            loop.run_until_complete(page.click('#login'))
+            loop.run_until_complete(page.waitForNavigation())
+            cookies = loop.run_until_complete(page.cookies())
+            cd = dict()
+            for c in cookies:
+                cd[c['name']] = c['value']
+            requests.utils.add_dict_to_cookiejar(self._session.cookies, cd)
+            self.print_warning_text('[+] Login successful!')
+            return True
+        except Exception as e:
+            print(e)
+            print(traceback.print_exc())
+            self.print_danger_text('[+] Login Failed!')
+            return False
+
     def download_course_by_url(self, url, target_folder):
         m = re.match('https://app.pluralsight.com/library/courses/(.*)', url)
         assert m, 'Failed to parse course slug from URL'
@@ -49,14 +92,19 @@ class PluralSightColab(object):
         print("")
 
     def sanitize_title(self, title):
-        return re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\xff]', ' ', title).replace('/', '-').replace(':', '_').replace('\\', '-').replace('*', '-').replace('<', '-').replace('>', '-').replace('|', '-').replace('?', '-').replace('"', '_')
+        return re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\xff]', ' ', title).replace('/', '-').replace(':', '_').replace(
+            '\\', '-').replace('*', '-').replace('<', '-').replace('>', '-').replace('|', '-').replace('?',
+                                                                                                       '-').replace('"',
+                                                                                                                    '_')
 
     def download_video(self, file_path, course):
         try:
             video_data = {"clipId": course['id'], "mediaType": "mp4", "quality": "1280x720",
                           "online": True, "boundedContext": "course", "versionId": ""}
-            lession_clip_data = self._session.post('https://app.pluralsight.com/video/clips/v3/viewclip', data=json.dumps(
-                video_data), headers={'Content-type': 'application/json', 'Accept': 'text/plain'})
+            lession_clip_data = self._session.post('https://app.pluralsight.com/video/clips/v3/viewclip',
+                                                   data=json.dumps(
+                                                       video_data),
+                                                   headers={'Content-type': 'application/json', 'Accept': 'text/plain'})
             video_link_response = lession_clip_data.json()
             try:
                 video_download_link = list(
@@ -82,7 +130,8 @@ class PluralSightColab(object):
                         video_done = int(
                             10 * video_dl / video_total_length)
                         sys.stdout.write('\r[*] Downloading Video: [%s%s] %d%%' %
-                                        ('=' * video_done, ' ' * (10 - video_done), int(100 * video_dl / video_total_length)))
+                                         ('=' * video_done, ' ' * (10 - video_done),
+                                          int(100 * video_dl / video_total_length)))
                         sys.stdout.flush()
                     print('')
                     self.print_success_text(
@@ -99,7 +148,8 @@ class PluralSightColab(object):
     def download_subtitle(self, file_path, course):
         try:
             print('[*] Downloading Subtitle...')
-            subtitle_url = 'https://app.pluralsight.com/transcript/api/v1/caption/webvtt/'+course['id']+'/'+course['version']+'/en/'
+            subtitle_url = 'https://app.pluralsight.com/transcript/api/v1/caption/webvtt/' + course['id'] + '/' + \
+                           course['version'] + '/en/'
             subtitle_request = requests.get(subtitle_url)
             filename, file_extension = os.path.splitext(file_path)
             subtitle_vtt_path = filename + '.vtt'
@@ -140,7 +190,9 @@ class PluralSightColab(object):
 
     def download_exercise_file(self, file_path, course_id):
         try:
-            response = self._session.get('https://app.pluralsight.com/learner/user/courses/' + course_id + '/exercise-files-url', headers={'Content-type': 'application/json', 'Accept': 'text/plain'})
+            response = self._session.get(
+                'https://app.pluralsight.com/learner/user/courses/' + course_id + '/exercise-files-url',
+                headers={'Content-type': 'application/json', 'Accept': 'text/plain'})
             exercise_request_url = response.json()['exerciseFilesUrl']
             if exercise_request_url is not None:
                 exercise_request = requests.get(
@@ -163,7 +215,8 @@ class PluralSightColab(object):
                             exercise_done = int(
                                 10 * exercise_dl / exercise_files_total_length)
                             sys.stdout.write('\r[*] Downloading Exercise Files: [%s%s] %d%%' %
-                                             ('=' * exercise_done, ' ' * (10 - exercise_done), int(100 * exercise_dl / exercise_files_total_length)))
+                                             ('=' * exercise_done, ' ' * (10 - exercise_done),
+                                              int(100 * exercise_dl / exercise_files_total_length)))
                             sys.stdout.flush()
                         print('')
                         self.print_success_text(
@@ -219,7 +272,7 @@ class PluralSightColab(object):
             self.print_info_text(
                 '[+] Chapter ' + str(c_i) + ' of ' + chapters_length + ': ' + chapter_title)
             chapter_path = base_path + '/' + \
-                str(c_i) + ' - ' + self.sanitize_title(chapter_title)
+                           str(c_i) + ' - ' + self.sanitize_title(chapter_title)
             if not os.path.exists(chapter_path):
                 os.makedirs(chapter_path)
             cl_i = 0
@@ -230,20 +283,21 @@ class PluralSightColab(object):
                 self.print_warning_text(
                     '[+] Download Lession ' + str(cl_i) + ' of ' + clips_length + ': ' + lession_title)
                 lession_path = chapter_path + '/' + \
-                    str(cl_i) + ' - ' + self.sanitize_title(lession_title)
+                               str(cl_i) + ' - ' + self.sanitize_title(lession_title)
 
                 # Download Video
                 should_skip = self.download_video(lession_path + '.mp4', c)
 
-                if(should_skip):
-                    self.print_danger_text("[*] Cannot download video, your account may be banned or your subscription has expired.")
-                    return # break the function
+                if (should_skip):
+                    self.print_danger_text(
+                        "[*] Cannot download video, your account may be banned or your subscription has expired.")
+                    return  # break the function
 
                 # Download Subtitles
                 self.download_subtitle(lession_path + '.srt', c)
 
                 # Download Learning Check
-                # TODO NEXT    
+                # TODO NEXT
 
                 # Delay next video
                 sleep_time = random.randint(self.min_wait, self.max_wait)
@@ -252,12 +306,12 @@ class PluralSightColab(object):
                 time.sleep(sleep_time)
                 print('')
             print('')
-        
+
         self.download_exercise_file(os.path.join(base_path, slug + '.zip'), slug)
 
         # move files to target folder
         if os.path.exists(target_path):
-           shutil.rmtree(target_path)
+            shutil.rmtree(target_path)
         print("[*] Moving files from " + base_path + " to " + target_folder)
         shutil.move(base_path, target_folder)
         self.update_downloaded(slug)

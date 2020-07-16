@@ -17,7 +17,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.keys import Keysl
 from googleapiclient.http import MediaFileUpload                    # pylint: disable=import-error
 from colorama import Fore, Back, Style
 
