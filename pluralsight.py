@@ -21,7 +21,6 @@ from selenium.webdriver.common.keys import Keys
 from googleapiclient.http import MediaFileUpload                    # pylint: disable=import-error
 from colorama import Fore, Back, Style
 
-
 class PluralSight(object):
 
     def __init__(
@@ -38,6 +37,9 @@ class PluralSight(object):
         self.password = options.password
         self.cookies = options.cookies
         self.driver_path = options.driver
+        self.min_wait = options.min_wait
+        self.max_wait = options.max_wait
+        self.retry_delay = 30
         self.drive_api = drive_api
         self.team_drive_folder_id = options.team_drive_folder_id
         self.team_drive_id = options.team_drive_id
@@ -88,7 +90,7 @@ class PluralSight(object):
         time.sleep(2)
 
     def sanitize_title(self, title):
-        return title.replace('/', '_').replace(':', '_').replace('\\', '-').replace('*', '-').replace('<', '-').replace('>', '-').replace('|', '-').replace('?', '-').replace('"', '_')
+        return re.sub(r'[^\x00-\x7F]+',' ', title.replace('/', '_').replace(':', '_').replace('\\', '-').replace('*', '-').replace('<', '-').replace('>', '-').replace('|', '-').replace('?', '-').replace('"', '_'))
 
     def download_video(self, file_path, course):
         try:
@@ -150,7 +152,7 @@ class PluralSight(object):
             print(traceback.print_exc())
             self.print_danger_text(
                 "Failed to download video, retry 5 in seconds.")
-            time.sleep(5)
+            time.sleep(self.retry_delay)
             self.download_video(file_path, course)
 
     def download_subtitle(self, file_path, course):
@@ -196,7 +198,7 @@ class PluralSight(object):
             print(traceback.print_exc())
             self.print_danger_text(
                 "Failed to download subtitle, retry 5 in seconds.")
-            time.sleep(5)
+            time.sleep(self.retry_delay)
             self.download_subtitle(file_path, course)
 
     def download_exercise_file(self, file_path, course_data):
@@ -246,7 +248,7 @@ class PluralSight(object):
             print(traceback.print_exc())
             self.print_danger_text(
                 "Failed to download exercise file, retry 5 in seconds.")
-            time.sleep(5)
+            time.sleep(self.retry_delay)
             self.download_exercise_file(file_path, course_data)
 
     #def download_learning_check(self):
@@ -375,7 +377,9 @@ class PluralSight(object):
                             (By.XPATH, '//div[@class="player-wrapper"]//video'))
                     )
                     video_not_found = False
-                except NoSuchElementException:
+                except Exception as e:
+                    print(e)
+                    print(traceback.print_exc())
                     video_not_found = True
 
                 if video_not_found:
@@ -384,14 +388,14 @@ class PluralSight(object):
                     return
 
                 # Wait a bit before making the request or will get 429
-                time.sleep(5)
+                time.sleep(self.retry_delay)
 
                 self.download_video(lession_path + '.mp4', c)
 
                 self.download_subtitle(lession_path + '.srt', c)
 
                 # Delay next video
-                sleep_time = random.randint(10, 30)
+                sleep_time = random.randint(self.min_wait, self.max_wait)
                 self.print_info_text(
                     "[+] Wait %d seconds to next download to prevent banning." % (sleep_time))
                 time.sleep(sleep_time)

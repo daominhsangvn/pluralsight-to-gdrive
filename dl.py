@@ -74,6 +74,18 @@ def main():
         default=False,
         type=bool,
         help="Headless mode", metavar='')
+    other.add_argument(
+        '-miw', '--min-wait',
+        dest='min_wait',
+        default=30,
+        type=int,
+        help="Min wait between download (Seconds)", metavar='')
+    other.add_argument(
+        '-maw', '--max-wait',
+        dest='max_wait',
+        default=60,
+        type=int,
+        help="Max wait between download (Seconds)", metavar='')
 
     gdrive = parser.add_argument_group("GDrive")
     gdrive.add_argument(
