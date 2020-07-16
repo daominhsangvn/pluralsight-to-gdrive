@@ -49,7 +49,7 @@ class PluralSightColab(object):
         print("")
 
     def sanitize_title(self, title):
-        return re.sub(r'[^\x00-\x7F]+', ' ', title.replace('/', '-').replace(':', '_').replace('\\', '-').replace('*', '-').replace('<', '-').replace('>', '-').replace('|', '-').replace('?', '-').replace('"', '_'))
+        return re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\xff]', ' ', title).replace('/', '-').replace(':', '_').replace('\\', '-').replace('*', '-').replace('<', '-').replace('>', '-').replace('|', '-').replace('?', '-').replace('"', '_')
 
     def download_video(self, file_path, course):
         try:
