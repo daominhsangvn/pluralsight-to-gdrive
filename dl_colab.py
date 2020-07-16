@@ -29,6 +29,12 @@ def main():
         default=120,
         type=int,
         help="Max wait between download (Seconds)", metavar='')
+    other.add_argument(
+        '-e', '--executable-path',
+        dest='executablePath',
+        default=None,
+        type=int,
+        help="Executable Path", metavar='')
 
     options = parser.parse_args()
 

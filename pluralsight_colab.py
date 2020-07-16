@@ -23,6 +23,7 @@ class PluralSightColab(object):
         self.max_wait = options.max_wait
         self.username = options.username
         self.password = options.password
+        self.executablePath = options.executablePath
         self.retry_delay = 30
         self.pythonversion = 3 if sys.version_info >= (3, 0) else 2
 
@@ -58,8 +59,15 @@ class PluralSightColab(object):
                 '--ignore-certifcate-errors-spki-list',
                 '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"'
             ]
+            launch_options = dict()
+            launch_options['headless'] = True
+            launch_options['args'] = args
+            launch_options['ignoreHTTPSErrors'] = True
+            launch_options['userDataDir'] = './temp'
+            if self.executablePath:
+                launch_options['executablePath'] = self.executablePath
             browser = loop.run_until_complete(
-                launch(headless=True, args=args, ignoreHTTPSErrors=True, userDataDir='./temp'))
+                launch(launch_options))
             page = loop.run_until_complete(browser.newPage())
             loop.run_until_complete(stealth(page))
             loop.run_until_complete(page.setJavaScriptEnabled(True))
