@@ -15,3 +15,5 @@ For Colab:
 Troubleshotting:
 `from_buffer() cannot return the address of the raw string within a bytes or unicode object`
 > $ pip install pyOpenSSL
+
+> pip install urllib3<1.25
