@@ -113,7 +113,7 @@ class PluralSightColab(object):
             browser = await launch(launch_options)
             context = await browser.createIncognitoBrowserContext()
             page = await context.newPage()
-            #await stealth(page)
+            await stealth(page)
             await page.setJavaScriptEnabled(True)
             #await page.setRequestInterception(True)
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36')
@@ -129,13 +129,14 @@ class PluralSightColab(object):
             await page.waitForNavigation()
             page_content = await page.evaluate('''() => {return document.body.innerHTML}''')
             if 'Please complete the security check to access the site' in page_content:
-              return False
+                print(page_content)
+                return False
             cookies = await page.cookies()
             cd = dict()
             for c in cookies:
                 cd[c['name']] = c['value']
             requests.utils.add_dict_to_cookiejar(self._session.cookies, cd)
-            self.print_warning_text('[+] Login successful!')
+            self.print_success_text('[+] Login successful!')
             return True
         except Exception as e:
             print(e)
