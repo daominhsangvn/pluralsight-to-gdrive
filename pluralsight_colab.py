@@ -46,6 +46,50 @@ class PluralSightColab(object):
         downloaded_history_file.write(slug + '\n')
         downloaded_history_file.close()
 
+    async def handle_request(self, request):
+      print('('+request.method+') ' + request.url)
+      response_data = dict()
+      if request.url == 'https://app.pluralsight.com/web-analytics/api/v1/dvs/page':
+        response_data['status'] = 401
+        response_data['body'] = 'Unauthorized'
+        response_data['contentType'] = 'text/plain; charset=utf-8'
+        return await request.respond(response_data)
+      elif request.url == 'https://s2.pluralsight.com/typography/726153/0017815A7428471DD.css':
+        response_data['body'] = ''
+        response_data['contentType'] = 'text/css'
+        return await request.respond(response_data)
+      elif request.url == 'https://s2.pluralsight.com/typography/726153/0017815A7428471DD.css':
+        response_data['body'] = '{"status":200,"requestId":"eaecba18cb974dcb8188b0f64d0e08b7","client":"pluralsight","id":{"tntId":"eb4e367e3aa040b6b25dc408964155a8.38_0","marketingCloudVisitorId":"26863548497945868433394706043348480494"},"edgeHost":"mboxedge38.tt.omtrdc.net","prefetch":{},"execute":{"pageLoad":{"options":[{"content":[{"type":"setHtml","selector":"#right > DIV.banner:eq(0)","cssSelector":"#right > DIV:nth-of-type(1)","content":"<div class=\"marketing-banner\">\n\t<div class=\"marketing-banner-text\">\n\t\t<div class=\"marketing-banner-text-wrapper\">\n\t\t<div class=\"marketing-banner-title\">\n\t\t\t<div class=\"main-title\"><img alt=\"Stay home. Skill up.\" src=\"https://www.pluralsight.com/content/dam/pluralsight2/target/login/skill-up.png\"></div>\n\t\t\t<div class=\"image-bottom\"><img class=\"image-for-large\" alt=\"Illustration of working at home\" src=\"https://www.pluralsight.com/content/dam/pluralsight2/target/login/free-april-main.png\"><img class=\"image-for-small\" alt=\"Illustration of working at home 2\" src=\"https://www.pluralsight.com/content/dam/pluralsight2/target/login/free-april-single.png\"></div>\n\t\t</div>\n\t</div>\n</div>\n\n<style>\n#right {position: relative;}\n.banner {\n  background-image: unset;\n  background-color: black;\n  background-position: center center;\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n}\n .banner .marketing-banner {\n    width: 100%;\n    padding: 30px 0;\n    position: absolute;\n    left: 50%;\n    top: 50%;\n    transform: translate(-50%, -50%);\n    text-align: center;\n    display: flex;\n  }\n  \n  .banner .marketing-banner-text {\n    display: flex;\n    flex-direction: column;\n    margin-bottom: 0;\n  }\n .banner .marketing-banner .main-title {line-height: 1; margin-bottom:80px;}\n .banner .marketing-banner .main-title img {width: 80%;}\n .banner .marketing-banner .sub-title img {width: 40%;}\n .banner .marketing-banner .image-bottom {position: relative;}\n\n  .banner .marketing-banner-text-wrapper {\n        margin-top: auto;\n   }\n.banner .psds-button--gradient{\n    background: linear-gradient(103.33deg, #EC0090 0%, #F15A29 100%);\n    border: 1px solid transparent;\n    width: 200px;\n    font-weight: 700;\n    font-size: 14px;\n    border-radius: 2px;\n    padding: 15px 30px;\n    height: unset;\n    text-transform: uppercase;\n    letter-spacing: 1px;\n    outline: none;\n    transition: box-shadow .3s ease-in-out;\n    margin-top: 50px;\n    margin-left: auto;\n    margin-right: auto;\n    color: #fff;\n     display: block;\n     z-index: 1;\n  }\n  .banner .psds-button--gradient:hover, \n  .banner .psds-button--gradient:focus {\n    border: 1px solid transparent;\n    box-shadow: unset;\n    background: linear-gradient(103.33deg, #EC0090 0%, #F15A29 100%);\n    color: white;\n  }\n \n  @media only screen and (max-width: 1366px) {\n        .banner .psds-button--gradient {margin-bottom: 100px;}\n        .image-for-small {display: block; margin-left: auto; margin-right: auto;}\n        .image-for-large {display: none;}\n  }\n  @media only screen and (min-width: 1200px) {\n        .banner .marketing-banner {padding: 0;}\n        .banner .marketing-banner .image-bottom {margin-top: -50px;}\n        .banner .psds-button--gradient {margin-bottom: 0;}\n        .image-for-small {display: none;}\n        .image-for-large {display: block; width: 100%;}\n  }\n</style>"}],"type":"actions","responseTokens":{"activity.id":"339721","experience.id":"1","experience.name":"Variation 1","activity.name":"Login | Free April","profile.prospect_var":"customer"}}]}}}'
+        response_data['contentType'] = 'application/json;charset=UTF-8'
+        return await request.respond(response_data)
+      elif request.url == 'https://api.segment.io/v1/p':
+        response_data['body'] = '''{
+          "success": true
+        }'''
+        response_data['contentType'] = 'application/json;charset=UTF-8'
+        return await request.respond(response_data)
+      elif request.url == 'https://cdn.wootric.com/wootric-sdk.js':
+        r = requests.get(request.url, allow_redirects=True)
+        response_data['body'] = r.content
+        response_data['contentType'] = 'application/javascript'
+        return await request.respond(response_data)
+      elif request.url == 'https://edge.fullstory.com/s/fs.js':
+        r = requests.get(request.url, allow_redirects=True)
+        response_data['body'] = r.content
+        response_data['contentType'] = 'application/javascript'
+        return await request.respond(response_data)
+      elif request.url == 'https://ssl.widgets.webengage.com/js/webengage-min-v-6.0.js':
+        r = requests.get(request.url, allow_redirects=True)
+        response_data['body'] = r.content
+        response_data['contentType'] = 'application/javascript'
+        return await request.respond(response_data)
+      elif request.url == 'https://fast.appcues.com/30489.js':
+        r = requests.get(request.url, allow_redirects=True)
+        response_data['body'] = r.content
+        response_data['contentType'] = 'application/javascript'
+        return await request.respond(response_data)
+      return await request.continue_()
+
     async def login(self):
         try:
             self.print_warning_text('[*] Logging in...')
@@ -67,17 +111,25 @@ class PluralSightColab(object):
                 launch_options['executablePath'] = self.executablePath
             #print(' '.join(Launcher().cmd))
             browser = await launch(launch_options)
-            page = await browser.newPage()
-            await stealth(page)
+            context = await browser.createIncognitoBrowserContext()
+            page = await context.newPage()
+            #await stealth(page)
             await page.setJavaScriptEnabled(True)
+            #await page.setRequestInterception(True)
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36')
             await page.setViewport({'width': 1600, 'height': 900})
+            #page.on('request', lambda req: asyncio.ensure_future(self.handle_request(req)))
+            #page.on('response', lambda res: print('('+str(res.status)+') ' + res.url))
+            #page.on('requestfailed', lambda res: print('('+str(res.status)+') ' + res.url))
             await page.goto('https://app.pluralsight.com/id?')
             await page.waitFor('#Username')
             await page.type('#Username', self.username)
             await page.type('#Password', self.password)
             await page.click('#login')
             await page.waitForNavigation()
+            page_content = await page.evaluate('''() => {return document.body.innerHTML}''')
+            if 'Please complete the security check to access the site' in page_content:
+              return False
             cookies = await page.cookies()
             cd = dict()
             for c in cookies:
