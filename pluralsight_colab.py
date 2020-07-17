@@ -1,5 +1,6 @@
 import requests, json, sys, re, os, re, shutil, subprocess, types, time, traceback, random
 from pyppeteer import launch
+from pyppeteer.launcher import Launcher
 from pyppeteer_stealth import stealth
 import asyncio
 
@@ -45,11 +46,9 @@ class PluralSightColab(object):
         downloaded_history_file.write(slug + '\n')
         downloaded_history_file.close()
 
-    def login(self):
+    async def login(self):
         try:
             self.print_warning_text('[*] Logging in...')
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
             args = [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -66,20 +65,20 @@ class PluralSightColab(object):
             launch_options['userDataDir'] = './temp'
             if self.executablePath:
                 launch_options['executablePath'] = self.executablePath
-            browser = loop.run_until_complete(
-                launch(launch_options))
-            page = loop.run_until_complete(browser.newPage())
-            loop.run_until_complete(stealth(page))
-            loop.run_until_complete(page.setJavaScriptEnabled(True))
-            loop.run_until_complete(page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36'))
-            loop.run_until_complete(page.setViewport({'width': 1600, 'height': 900}))
-            loop.run_until_complete(page.goto('https://app.pluralsight.com/id?'))
-            loop.run_until_complete(page.waitFor('#Username'))
-            loop.run_until_complete(page.type('#Username', self.username))
-            loop.run_until_complete(page.type('#Password', self.password))
-            loop.run_until_complete(page.click('#login'))
-            loop.run_until_complete(page.waitForNavigation())
-            cookies = loop.run_until_complete(page.cookies())
+            #print(' '.join(Launcher().cmd))
+            browser = await launch(launch_options)
+            page = await browser.newPage()
+            await stealth(page)
+            await page.setJavaScriptEnabled(True)
+            await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36')
+            await page.setViewport({'width': 1600, 'height': 900})
+            await page.goto('https://app.pluralsight.com/id?')
+            await page.waitFor('#Username')
+            await page.type('#Username', self.username)
+            await page.type('#Password', self.password)
+            await page.click('#login')
+            await page.waitForNavigation()
+            cookies = await page.cookies()
             cd = dict()
             for c in cookies:
                 cd[c['name']] = c['value']
@@ -92,10 +91,10 @@ class PluralSightColab(object):
             self.print_danger_text('[+] Login Failed!')
             return False
 
-    def download_course_by_url(self, url, target_folder):
+    async def download_course_by_url(self, url, target_folder):
         m = re.match('https://app.pluralsight.com/library/courses/(.*)', url)
         assert m, 'Failed to parse course slug from URL'
-        self.download_course(m.group(1), target_folder, url)
+        await self.download_course(m.group(1), target_folder, url)
         self.print_success_text("[*] Finished")
         print("")
 
@@ -237,7 +236,7 @@ class PluralSightColab(object):
             time.sleep(self.retry_delay)
             self.download_exercise_file(file_path, course_id)
 
-    def download_course(self, slug, target_folder, url):
+    async def download_course(self, slug, target_folder, url):
         data = self.fetch_course_data(slug)
 
         title = data['title']

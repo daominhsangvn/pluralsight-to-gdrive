@@ -3,8 +3,9 @@ from pluralsight_colab import PluralSightColab
 import pickle
 import os.path
 from os import chdir, listdir, stat
+import asyncio
 
-def main():
+async def main():
     parser = argparse.ArgumentParser(
         description='A cross-platform python based utility to download courses from PluralSight for personal offline use.', conflict_handler="resolve")
     parser.add_argument(
@@ -57,15 +58,15 @@ def main():
     print("[+] Found " + str(len(course_urls)) + " COURSES")
     dl = PluralSightColab(options, downloaded_history_file_path)
 
-    login_success = dl.login()
+    login_success = await dl.login()
 
     if login_success:
         for co in course_urls:
-            dl.download_course_by_url(co, options.target_folder)
+            await dl.download_course_by_url(co, options.target_folder)
 
     print("")
     print("[+] DONE !")
     print("")
 
 if __name__ == "__main__":
-    main()
+    asyncio.get_event_loop().run_until_complete(main())
