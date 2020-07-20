@@ -88,9 +88,9 @@ async def main():
 
     login_success = await dl.login()
 
-    if login_success:
-        for co in course_urls:
-            await dl.download_course_by_url(co, options.target_folder)
+    # if login_success:
+    #     for co in course_urls:
+    #         await dl.download_course_by_url(co, options.target_folder)
 
     print("")
     print("[+] DONE !")

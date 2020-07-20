@@ -109,10 +109,20 @@ class PluralSightColab(object):
                     proxies = {'http': self.proxy}
                     self._session.proxies.update(proxies)
                 ip_response = self._session.get("http://httpbin.org/ip")
-                self.print_info_text("[+] Session IP")
-                print(ip_response.content)
-                self.print_success_text('[+] Login successful!')
-                return True
+                try:
+                    print(ip_response.content)
+                    origin_ip = ip_response.json()['origin']
+                    if origin_ip in self.proxy:
+                        self.print_info_text("[+] Session IP: " + origin_ip)
+                        self.print_success_text('[+] Login successful!')
+                        return True
+                    else:
+                        self.print_danger_text('[+] Proxy not working!')
+                except Exception as e:
+                    print(e)
+                    print(traceback.print_exc())
+                self.print_danger_text('[+] Login Failed!')
+                return False
             else:
                 args = [
                     '--no-sandbox',
