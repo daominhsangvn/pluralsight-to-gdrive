@@ -206,7 +206,7 @@ class PluralSightColab(object):
             except Exception as e:
                 # Failed to parse video url then stop the course
                 return True
-            video_request = requests.get(video_download_link, stream=True)
+            video_request = self._session.get(video_download_link, stream=True)
             video_total_length = video_request.headers.get(
                 'content-length')
             with open(file_path, 'wb') as f:
@@ -244,7 +244,7 @@ class PluralSightColab(object):
             print('[*] Downloading Subtitle...')
             subtitle_url = 'https://app.pluralsight.com/transcript/api/v1/caption/webvtt/' + course['id'] + '/' + \
                            course['version'] + '/en/'
-            subtitle_request = requests.get(subtitle_url)
+            subtitle_request = self._session.get(subtitle_url)
             filename, file_extension = os.path.splitext(file_path)
             subtitle_vtt_path = filename + '.vtt'
             with open(subtitle_vtt_path, 'wb') as f:
@@ -289,7 +289,7 @@ class PluralSightColab(object):
                 headers={'Content-type': 'application/json', 'Accept': 'text/plain'})
             exercise_request_url = response.json()['exerciseFilesUrl']
             if exercise_request_url is not None:
-                exercise_request = requests.get(
+                exercise_request = self._session.get(
                     exercise_request_url, stream=True)
                 exercise_files_total_length = exercise_request.headers.get(
                     'content-length')
