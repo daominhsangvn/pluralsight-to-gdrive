@@ -168,8 +168,11 @@ class PluralSightColab(object):
     async def download_course_by_url(self, url, target_folder):
         m = re.match('https://app.pluralsight.com/library/courses/(.*)', url)
         assert m, 'Failed to parse course slug from URL'
-        await self.download_course(m.group(1), target_folder, url)
-        self.print_success_text("[*] Finished")
+        download_result = await self.download_course(m.group(1), target_folder, url)
+        if download_result:
+            self.print_success_text("[*] Finished")
+        else:
+            self.print_danger_text("[*] Failed")
         print("")
 
     def sanitize_title(self, title):
@@ -372,7 +375,7 @@ class PluralSightColab(object):
                 if (should_skip):
                     self.print_danger_text(
                         "[*] Cannot download video, your account may be banned or your subscription has expired.")
-                    return  # break the function
+                    return False  # break the function
 
                 # Download Subtitles
                 self.download_subtitle(lession_path + '.srt', c)
@@ -396,6 +399,7 @@ class PluralSightColab(object):
         print("[*] Moving files from " + base_path + " to " + target_folder)
         shutil.move(base_path, target_folder)
         self.update_downloaded(slug)
+        return True
 
     def fetch_course_data(self, slug):
         course_data_url = 'https://app.pluralsight.com/learner/content/courses/{}'.format(
