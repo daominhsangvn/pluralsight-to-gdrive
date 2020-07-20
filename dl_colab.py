@@ -9,13 +9,41 @@ async def main():
     parser = argparse.ArgumentParser(
         description='A cross-platform python based utility to download courses from PluralSight for personal offline use.', conflict_handler="resolve")
     parser.add_argument(
-        'username', help="Pluralsight username", type=str)
-    parser.add_argument(
-        'password', help="Pluralsight password", type=str)
-    parser.add_argument(
         'course', help="Course file path", type=str)
     parser.add_argument(
         'target_folder', help="Output folder", type=str)
+
+    authentication = parser.add_argument_group("Authentication")
+    authentication.add_argument(
+        '-u', '--username',
+        dest='username',
+        default=None,
+        type=str,
+        help="Username", metavar='')
+    authentication.add_argument(
+        '-p', '--password',
+        dest='password',
+        default=None,
+        type=str,
+        help="Password", metavar='')
+    authentication.add_argument(
+        '-c', '--cookies',
+        dest='cookies',
+        default=None,
+        type=str,
+        help="Cookies file path", metavar='')
+    authentication.add_argument(
+        '-pr', '--proxy',
+        dest='proxy',
+        default=None,
+        type=str,
+        help="Proxy", metavar='')
+    authentication.add_argument(
+        '-ua', '--user-agent',
+        dest='user_agent',
+        default=None,
+        type=str,
+        help="User-Agent header value", metavar='')
 
     other = parser.add_argument_group("Others")
     other.add_argument(

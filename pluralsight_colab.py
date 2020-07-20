@@ -3,6 +3,7 @@ from pyppeteer import launch
 from pyppeteer.launcher import Launcher
 from pyppeteer_stealth import stealth
 import asyncio
+from http.cookiejar import MozillaCookieJar
 
 from colorama import Fore, Back, Style
 
@@ -24,6 +25,9 @@ class PluralSightColab(object):
         self.max_wait = options.max_wait
         self.username = options.username
         self.password = options.password
+        self.cookies = options.cookies
+        self.user_agent = options.user_agent if options.user_agent != None else "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36"
+        self.proxy = options.proxy
         self.executablePath = options.executablePath
         self.retry_delay = 30
         self.pythonversion = 3 if sys.version_info >= (3, 0) else 2
@@ -93,51 +97,68 @@ class PluralSightColab(object):
     async def login(self):
         try:
             self.print_warning_text('[*] Logging in...')
-            args = [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-infobars',
-                '--window-position=0,0',
-                '--ignore-certifcate-errors',
-                '--ignore-certifcate-errors-spki-list',
-                '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"'
-            ]
-            launch_options = dict()
-            launch_options['headless'] = True
-            launch_options['args'] = args
-            launch_options['ignoreHTTPSErrors'] = True
-            launch_options['userDataDir'] = './temp'
-            if self.executablePath:
-                launch_options['executablePath'] = self.executablePath
-            #print(' '.join(Launcher().cmd))
-            browser = await launch(launch_options)
-            context = await browser.createIncognitoBrowserContext()
-            page = await context.newPage()
-            await stealth(page)
-            await page.setJavaScriptEnabled(True)
-            #await page.setRequestInterception(True)
-            await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36')
-            await page.setViewport({'width': 1600, 'height': 900})
-            #page.on('request', lambda req: asyncio.ensure_future(self.handle_request(req)))
-            #page.on('response', lambda res: print('('+str(res.status)+') ' + res.url))
-            #page.on('requestfailed', lambda res: print('('+str(res.status)+') ' + res.url))
-            await page.goto('https://app.pluralsight.com/id?')
-            await page.waitFor('#Username')
-            await page.type('#Username', self.username)
-            await page.type('#Password', self.password)
-            await page.click('#login')
-            await page.waitForNavigation()
-            page_content = await page.evaluate('''() => {return document.body.innerHTML}''')
-            if 'Please complete the security check to access the site' in page_content:
-                print(page_content)
-                return False
-            cookies = await page.cookies()
-            cd = dict()
-            for c in cookies:
-                cd[c['name']] = c['value']
-            requests.utils.add_dict_to_cookiejar(self._session.cookies, cd)
-            self.print_success_text('[+] Login successful!')
-            return True
+            if self.cookies != None and os.path.isfile(self.cookies):
+                self.print_warning_text('[*] Using cookies...')
+                cj = MozillaCookieJar(self.cookies)
+                cj.load(ignore_expires=True, ignore_discard=True)
+                self._session = requests.Session()
+                self._session.cookies = cj
+                self._session.headers.update({'user-agent': self.user_agent})
+                if self.proxy != None:
+                    self.print_warning_text('[*] Using proxy ' + self.proxy)
+                    proxies = {'http': self.proxy}
+                    self._session.proxies.update(proxies)
+                ip_response = self._session.get("http://httpbin.org/ip")
+                self.print_info_text("[+] Session IP")
+                print(ip_response.content)
+                self.print_success_text('[+] Login successful!')
+                return True
+            else:
+                args = [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-infobars',
+                    '--window-position=0,0',
+                    '--ignore-certifcate-errors',
+                    '--ignore-certifcate-errors-spki-list',
+                    '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"'
+                ]
+                launch_options = dict()
+                launch_options['headless'] = True
+                launch_options['args'] = args
+                launch_options['ignoreHTTPSErrors'] = True
+                launch_options['userDataDir'] = './temp'
+                if self.executablePath:
+                    launch_options['executablePath'] = self.executablePath
+                #print(' '.join(Launcher().cmd))
+                browser = await launch(launch_options)
+                context = await browser.createIncognitoBrowserContext()
+                page = await context.newPage()
+                await stealth(page)
+                await page.setJavaScriptEnabled(True)
+                #await page.setRequestInterception(True)
+                await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36')
+                await page.setViewport({'width': 1600, 'height': 900})
+                #page.on('request', lambda req: asyncio.ensure_future(self.handle_request(req)))
+                #page.on('response', lambda res: print('('+str(res.status)+') ' + res.url))
+                #page.on('requestfailed', lambda res: print('('+str(res.status)+') ' + res.url))
+                await page.goto('https://app.pluralsight.com/id?')
+                await page.waitFor('#Username')
+                await page.type('#Username', self.username)
+                await page.type('#Password', self.password)
+                await page.click('#login')
+                await page.waitForNavigation()
+                page_content = await page.evaluate('''() => {return document.body.innerHTML}''')
+                if 'Please complete the security check to access the site' in page_content:
+                    print(page_content)
+                    return False
+                cookies = await page.cookies()
+                cd = dict()
+                for c in cookies:
+                    cd[c['name']] = c['value']
+                requests.utils.add_dict_to_cookiejar(self._session.cookies, cd)
+                self.print_success_text('[+] Login successful!')
+                return True
         except Exception as e:
             print(e)
             print(traceback.print_exc())
